@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BlueWash POS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+ 
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-bubbles" id="loginBubbles"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">ZW</div>
+      <h1>ZeniWash</h1>
+      <p>Point of Sale System</p>
+    </div>
+    <div class="login-form-group">
+      <label>Role</label>
+      <select id="roleSelect">
+        <option value="admin">👑 Administrator</option>
+        <option value="cashier">🧾 Cashier</option>
+      </select>
+    </div>
+    <div class="login-form-group">
+      <label>Password</label>
+      <input type="password" id="passwordInput" placeholder="Enter your password"/>
+    </div>
+    <button class="login-btn" id="loginBtn">Sign In →</button>
+    <p class="login-error" id="loginError"></p>
+    <div class="login-demo">
+      <div class="demo-badge">Admin: <strong>admin123</strong></div>
+      <div class="demo-badge">Cashier: <strong>1234</strong></div>
+    </div>
+  </div>
+</div>
+ 
+<!-- APP -->
+<div id="appShell" class="app hidden">
+ 
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-icon">🧺</div>
+      <div>
+        <h2>BlueWash</h2>
+        <span>POS System</span>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-section">Main</div>
+      <button class="nav-link active" data-view="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
+      <button class="nav-link" data-view="pos"><span class="nav-icon">🧾</span> POS</button>
+      <div class="nav-section">Management</div>
+      <button class="nav-link" data-view="inventory"><span class="nav-icon">📦</span> Inventory</button>
+      <button class="nav-link" data-view="customers"><span class="nav-icon">👥</span> Customers</button>
+      <button class="nav-link" data-view="reports"><span class="nav-icon">📈</span> Reports</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-info">
+          <strong id="userName">Admin</strong>
+          <span id="userRole">Administrator</span>
+        </div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">← Sign Out</button>
+    </div>
+  </aside>
+ 
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="viewTitle">Dashboard</h1>
+        <p id="viewDate"></p>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="themeToggle" title="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+ 
+    <div class="content">
+ 
+      <!-- DASHBOARD -->
+      <section id="dashboardView" class="view active">
+        <div class="stat-cards">
+          <div class="stat-card blue">
+            <div class="stat-icon">💰</div>
+            <div class="stat-label">Daily Sales</div>
+            <div class="stat-value" id="dailySales">₱0</div>
+            <div class="stat-sub">Today's revenue</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">👥</div>
+            <div class="stat-label">Total Customers</div>
+            <div class="stat-value" id="totalCustomers">0</div>
+            <div class="stat-sub">Unique customers</div>
+          </div>
+          <div class="stat-card warn">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-label">Active Orders</div>
+            <div class="stat-value" id="activeOrders">0</div>
+            <div class="stat-sub">Pending / Washing</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">📦</div>
+            <div class="stat-label">Inventory Health</div>
+            <div class="stat-value" id="inventoryHealth">Good</div>
+            <div class="stat-sub" id="inventoryHealthText">All items stocked</div>
+          </div>
+        </div>
+ 
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Weekly Revenue</h2>
+                <p class="panel-sub">Last 7 days performance</p>
+              </div>
+            </div>
+            <div class="chart-wrap" id="weeklyChart"></div>
+          </div>
+          <div class="panel">
+            <h2>Service Breakdown</h2>
+            <p class="panel-sub">By transaction count</p>
+            <div id="serviceBreakdown"></div>
+          </div>
+        </div>
+ 
+        <div class="panel">
+          <div class="panel-header">
+            <div><h2>Recent Transactions</h2><p class="panel-sub">Latest activity</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Receipt</th><th>Customer</th><th>Service</th><th>Status</th><th>Total</th></tr></thead>
+              <tbody id="recentTransactions"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+ 
+      <!-- POS -->
+      <section id="posView" class="view">
+        <div class="pos-layout">
+          <div>
+            <div class="panel">
+              <h2>New Transaction</h2>
+              <p class="panel-sub">Fill in the details below</p>
+              <div class="form-grid" id="posForm">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Customer Name</label>
+                    <input type="text" id="customerName" placeholder="e.g. Juan dela Cruz"/>
+                  </div>
+                  <div class="form-group">
+                    <label>Contact Number</label>
+                    <input type="text" id="customerContact" placeholder="09xx-xxx-xxxx"/>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Service</label>
+                    <select id="serviceType"></select>
+                  </div>
+                  <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="serviceQty" value="1" min="1"/>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="paymentMethod">
+                      <option>Cash</option>
+                      <option>GCash</option>
+                      <option>Card</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Order Status</label>
+                    <select id="orderStatus">
+                      <option>Pending</option>
+                      <option>Washing</option>
+                      <option>Ready for Pickup</option>
+                      <option>Claimed</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="total-display">
+                  <span>Total Amount</span>
+                  <strong id="computedTotal">₱0</strong>
+                </div>
+                <button class="btn btn-primary btn-full" id="saveTxnBtn">Save Transaction ✓</button>
+              </div>
+            </div>
+ 
+            <div class="panel">
+              <div class="panel-header">
+                <div><h2>Transaction History</h2><p class="panel-sub">All recorded transactions</p></div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Receipt</th><th>Customer</th><th>Contact</th><th>Service</th><th>Payment</th><th>Status</th><th>Total</th></tr></thead>
+                  <tbody id="transactionsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+ 
+          <!-- RECEIPT -->
+          <div class="receipt-card">
+            <h2>Receipt Preview</h2>
+            <div class="receipt-body" id="receiptPreview">
+              <div class="receipt-empty">
+                <span style="font-size:36px">🧾</span>
+                <span>No transaction yet</span>
+              </div>
+            </div>
+            <br/>
+            <button class="btn btn-secondary btn-full" id="printReceiptBtn">🖨️ Print Receipt</button>
+          </div>
+        </div>
+      </section>
+ 
+      <!-- INVENTORY -->
+      <section id="inventoryView" class="view">
+        <div class="inv-layout">
+          <div class="panel" style="align-self:start;position:sticky;top:90px;">
+            <h2 id="invFormTitle">Add Item</h2>
+            <p class="panel-sub">Manage your supplies</p>
+            <div class="form-grid" style="margin-top:16px;">
+              <input type="hidden" id="inventoryId"/>
+              <div class="form-group">
+                <label>Item Name</label>
+                <input type="text" id="itemName" placeholder="e.g. Premium Detergent"/>
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <select id="itemCategory">
+                  <option>Detergent</option>
+                  <option>Fabric Conditioner</option>
+                  <option>Plastic Packaging</option>
+                  <option>Hangers</option>
+                  <option>Tags</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Stock</label>
+                  <input type="number" id="itemStock" placeholder="0"/>
+                </div>
+                <div class="form-group">
+                  <label>Threshold</label>
+                  <input type="number" id="itemThreshold" placeholder="0"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Unit</label>
+                <input type="text" id="itemUnit" placeholder="kg, pcs, bottles..."/>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <button class="btn btn-primary btn-full" id="saveInvBtn">Save Item</button>
+                <button class="btn btn-secondary" id="resetInventoryForm">Clear</button>
+              </div>
+            </div>
+          </div>
+          <div id="inventoryCards" class="inv-grid"></div>
+        </div>
+      </section>
+ 
+      <!-- CUSTOMERS -->
+      <section id="customersView" class="view">
+        <div class="panel">
+          <div class="search-row">
+            <input type="search" id="customerSearch" placeholder="Search by name or contact..."/>
+          </div>
+          <div id="customerList" class="cust-grid"></div>
+        </div>
+      </section>
+ 
+      <!-- REPORTS -->
+      <section id="reportsView" class="view">
+        <div class="reports-grid">
+          <div class="panel">
+            <h2>📅 Daily Report</h2>
+            <p class="panel-sub">Today's summary</p>
+            <div id="dailyReport"></div>
+          </div>
+          <div class="panel">
+            <h2>📆 Monthly Report</h2>
+            <p class="panel-sub">This month's summary</p>
+            <div id="monthlyReport"></div>
+          </div>
+          <div class="panel">
+            <h2>📦 Inventory Report</h2>
+            <p class="panel-sub">Stock status</p>
+            <div id="inventoryReport"></div>
+          </div>
+        </div>
+        <div class="print-bar">
+          <button class="btn btn-primary" id="printReportBtn">🖨️ Print Report</button>
+        </div>
+      </section>
+ 
+    </div><!-- /content -->
+  </main>
+</div>
+ 
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✅</span><span id="toastMsg"></span></div>
+<script src="app.js"></script>
+</body>
+</html>
