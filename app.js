@@ -182,7 +182,7 @@ function renderReceipt(t){
   const el=$("receiptPreview");
   el.innerHTML=`
     <div class="receipt-shop">
-      <h3>🧺 BlueWash Laundry</h3>
+      <h3>ZeniWash</h3>
       <p>${new Date().toLocaleString("en-PH")}</p>
     </div>
     <div class="receipt-row"><span>Receipt #</span><strong>${t.id}</strong></div>
