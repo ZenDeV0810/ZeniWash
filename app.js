@@ -1,9 +1,9 @@
 const peso = new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP",maximumFractionDigits:0});
  
 const SERVICES = [
-  {name:"Wash & Fold",   unit:"kg",    price:75},
-  {name:"Dry Cleaning",  unit:"item",  price:220},
-  {name:"Ironing",       unit:"piece", price:45},
+  {name:"Wash & Fold",   unit:"8kg",    price:180},
+  {name:"Dry Cleaning",  unit:"item",  price:100},
+  {name:"Ironing",       unit:"item", price:10},
   {name:"Express Service",unit:"kg",   price:120}
 ];
  
