@@ -1,12 +1,12 @@
 const peso = new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP",maximumFractionDigits:0});
- 
+
 const SERVICES = [
-  {name:"Wash & Fold",   unit:"8kg",    price:180},
-  {name:"Dry Cleaning",  unit:"item",  price:100},
-  {name:"Ironing",       unit:"item", price:10},
+  {name:"Wash & Fold",   unit:"8kg",   price:160},
+  {name:"Dry Cleaning",  unit:"item",  price:200},
+  {name:"Ironing",       unit:"1kg",   price:100},
   {name:"Express Service",unit:"kg",   price:120}
 ];
- 
+
 const SEED = {
   transactions:[],
   inventory:[
@@ -15,7 +15,7 @@ const SEED = {
     {id:"INV-3",name:"Poly Bags",category:"Plastic Packaging",stock:200,threshold:50,unit:"pcs"}
   ]
 };
- 
+
 function loadState(){
   try{
     const s=localStorage.getItem("bw2");
@@ -25,12 +25,11 @@ function loadState(){
 function saveState(){
   localStorage.setItem("bw2",JSON.stringify(state));
 }
- 
+
 let state=loadState();
 let currentUser=null;
 const $=id=>document.getElementById(id);
-const qs=sel=>document.querySelector(sel);
- 
+
 // ─── TOAST ──────────────────────────────────────────────────────────────────
 function toast(msg,icon="✅"){
   $("toastMsg").textContent=msg;
@@ -38,7 +37,7 @@ function toast(msg,icon="✅"){
   $("toast").classList.add("show");
   setTimeout(()=>$("toast").classList.remove("show"),2800);
 }
- 
+
 // ─── LOGIN ──────────────────────────────────────────────────────────────────
 function initBubbles(){
   const wrap=$("loginBubbles");
@@ -49,13 +48,13 @@ function initBubbles(){
     wrap.appendChild(s);
   }
 }
- 
+
 function setupLogin(){
   initBubbles();
   $("loginBtn").addEventListener("click",doLogin);
   $("passwordInput").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 }
- 
+
 function doLogin(){
   const role=$("roleSelect").value;
   const pw=$("passwordInput").value;
@@ -77,7 +76,7 @@ function doLogin(){
   renderDashboard();
   toast("Welcome back!","👋");
 }
- 
+
 $("logoutBtn").addEventListener("click",()=>{
   currentUser=null;
   $("appShell").classList.add("hidden");
@@ -85,10 +84,10 @@ $("logoutBtn").addEventListener("click",()=>{
   $("roleSelect").value="admin";
   toast("Logged out","👋");
 });
- 
+
 // ─── NAVIGATION ─────────────────────────────────────────────────────────────
 const VIEW_TITLES={dashboard:"Dashboard",pos:"Point of Sale",inventory:"Inventory",customers:"Customers",reports:"Reports"};
- 
+
 document.querySelectorAll(".nav-link").forEach(btn=>{
   btn.addEventListener("click",()=>{
     document.querySelectorAll(".nav-link").forEach(b=>b.classList.remove("active"));
@@ -104,18 +103,35 @@ document.querySelectorAll(".nav-link").forEach(btn=>{
     if(view==="reports")renderReports();
   });
 });
- 
+
 function updateViewDate(){
   const now=new Date();
   $("viewDate").textContent=now.toLocaleDateString("en-PH",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
 }
- 
+
 // ─── THEME ──────────────────────────────────────────────────────────────────
 $("themeToggle").addEventListener("click",()=>{
   document.body.classList.toggle("dark");
   $("themeToggle").textContent=document.body.classList.contains("dark")?"☀️":"🌙";
 });
- 
+
+// ─── FULFILLMENT ────────────────────────────────────────────────────────────
+let fulfillmentMode="pickup";
+
+function setFulfillment(mode){
+  fulfillmentMode=mode;
+  $("btnPickup").classList.toggle("active",mode==="pickup");
+  $("btnDelivery").classList.toggle("active",mode==="delivery");
+  const ag=$("addressGroup");
+  if(mode==="delivery"){
+    ag.style.display="flex";
+    $("deliveryAddress").focus();
+  }else{
+    ag.style.display="none";
+    $("deliveryAddress").value="";
+  }
+}
+
 // ─── POS ────────────────────────────────────────────────────────────────────
 function setupPOS(){
   const st=$("serviceType");
@@ -125,25 +141,28 @@ function setupPOS(){
   $("serviceQty").addEventListener("input",updateTotal);
   $("saveTxnBtn").addEventListener("click",saveTxn);
 }
- 
+
 function updateTotal(){
   const svc=SERVICES.find(s=>s.name===$("serviceType").value);
   const qty=Math.max(1,Number($("serviceQty").value)||0);
   $("computedTotal").textContent=svc?peso.format(svc.price*qty):"₱0";
 }
- 
+
 function saveTxn(){
   const name=$("customerName").value.trim();
   const contact=$("customerContact").value.trim();
   if(!name||!contact){toast("Please fill in customer details","⚠️");return;}
   const svc=SERVICES.find(s=>s.name===$("serviceType").value);
   const qty=Math.max(1,Number($("serviceQty").value));
+  const address=$("deliveryAddress").value.trim();
+  if(fulfillmentMode==="delivery"&&!address){toast("Please enter a delivery address","⚠️");return;}
   const txn={
     id:"BW-"+Date.now(),
     customer:name,contact,
     service:svc.name,qty,
     payment:$("paymentMethod").value,
-    status:$("orderStatus").value,
+    fulfillment:fulfillmentMode==="delivery"?"Delivery":"Pick Up",
+    address:fulfillmentMode==="delivery"?address:"",
     total:svc.price*qty,
     date:new Date().toISOString()
   };
@@ -154,15 +173,18 @@ function saveTxn(){
   $("customerName").value="";
   $("customerContact").value="";
   $("serviceQty").value=1;
+  $("deliveryAddress").value="";
+  setFulfillment("pickup");
   updateTotal();
   toast("Transaction saved!","🧾");
 }
- 
-function statusPill(s){
-  const map={Pending:"warn","Washing":"blue","Ready for Pickup":"green","Claimed":"green"};
-  return `<span class="pill pill-${map[s]||"blue"}">${s}</span>`;
+
+function fulfillmentPill(f){
+  return f==="Delivery"
+    ?`<span class="pill pill-blue">🛵 Delivery</span>`
+    :`<span class="pill pill-green">🏪 Pick Up</span>`;
 }
- 
+
 function renderTransactions(){
   const tbody=$("transactionsTable");
   if(!tbody)return;
@@ -173,11 +195,12 @@ function renderTransactions(){
       <td>${t.contact}</td>
       <td>${t.service}</td>
       <td>${t.payment}</td>
-      <td>${statusPill(t.status)}</td>
+      <td>${fulfillmentPill(t.fulfillment||"Pick Up")}</td>
+      <td>${t.address?`📍 ${t.address}`:"—"}</td>
       <td><strong>${peso.format(t.total)}</strong></td>
-    </tr>`).join(""):`<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:30px;">No transactions yet</td></tr>`;
+    </tr>`).join(""):`<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px;">No transactions yet</td></tr>`;
 }
- 
+
 function renderReceipt(t){
   const el=$("receiptPreview");
   el.innerHTML=`
@@ -191,18 +214,19 @@ function renderReceipt(t){
     <div class="receipt-row"><span>Service</span><strong>${t.service}</strong></div>
     <div class="receipt-row"><span>Qty</span><strong>${t.qty}</strong></div>
     <div class="receipt-row"><span>Payment</span><strong>${t.payment}</strong></div>
-    <div class="receipt-row"><span>Status</span><strong>${t.status}</strong></div>
+    <div class="receipt-row"><span>Fulfillment</span><strong>${t.fulfillment||"Pick Up"}</strong></div>
+    ${t.address?`<div class="receipt-row"><span>Address</span><strong>${t.address}</strong></div>`:""}
     <div class="receipt-row total"><span>Total</span><strong>${peso.format(t.total)}</strong></div>`;
 }
- 
+
 $("printReceiptBtn").addEventListener("click",()=>window.print());
- 
+
 // ─── INVENTORY ──────────────────────────────────────────────────────────────
 function setupInventory(){
   $("saveInvBtn").addEventListener("click",saveInvItem);
   $("resetInventoryForm").addEventListener("click",resetInvForm);
 }
- 
+
 function resetInvForm(){
   $("inventoryId").value="";
   $("itemName").value="";
@@ -211,7 +235,7 @@ function resetInvForm(){
   $("itemUnit").value="";
   $("invFormTitle").textContent="Add Item";
 }
- 
+
 function saveInvItem(){
   const name=$("itemName").value.trim();
   const stock=Number($("itemStock").value);
@@ -228,7 +252,7 @@ function saveInvItem(){
   saveState();renderInventory();resetInvForm();
   toast("Inventory saved!","📦");
 }
- 
+
 function renderInventory(){
   const wrap=$("inventoryCards");
   if(!wrap)return;
@@ -248,7 +272,7 @@ function renderInventory(){
     </div>`;
   }).join("")||`<div style="color:var(--text2);padding:20px;">No inventory items yet.</div>`;
 }
- 
+
 window.editInv=function(id){
   const item=state.inventory.find(i=>i.id===id);
   if(!item)return;
@@ -260,7 +284,7 @@ window.editInv=function(id){
   $("itemUnit").value=item.unit;
   $("invFormTitle").textContent="Edit Item";
 };
- 
+
 // ─── CUSTOMERS ──────────────────────────────────────────────────────────────
 function renderCustomers(filter=""){
   const grid=$("customerList");
@@ -284,27 +308,27 @@ function renderCustomers(filter=""){
     </div>`).join(""):`<div style="color:var(--text2);grid-column:1/-1;padding:20px;">No customers found.</div>`;
   $("totalCustomers").textContent=Object.keys(map).length;
 }
- 
+
 $("customerSearch").addEventListener("input",e=>renderCustomers(e.target.value));
- 
+
 // ─── DASHBOARD ──────────────────────────────────────────────────────────────
 function renderDashboard(){
   const today=new Date().toDateString();
   const todayTxns=state.transactions.filter(t=>new Date(t.date).toDateString()===today);
   const dailyTotal=todayTxns.reduce((s,t)=>s+t.total,0);
   $("dailySales").textContent=peso.format(dailyTotal);
- 
+
   const custMap={};
   state.transactions.forEach(t=>custMap[t.contact]=true);
   $("totalCustomers").textContent=Object.keys(custMap).length;
- 
-  const active=state.transactions.filter(t=>t.status==="Pending"||t.status==="Washing").length;
+
+  const active=state.transactions.filter(t=>t.fulfillment==="Pick Up"||t.fulfillment==="Delivery").length;
   $("activeOrders").textContent=active;
- 
+
   const low=state.inventory.filter(i=>i.stock<i.threshold).length;
   $("inventoryHealth").textContent=low?"Low Stock":"Good";
   $("inventoryHealthText").textContent=low?`${low} item${low>1?"s":""} below threshold`:"All items stocked";
- 
+
   // weekly chart
   const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const now=new Date();
@@ -324,7 +348,7 @@ function renderDashboard(){
       <div class="bar-label">${dayLabel}</div>
     </div>`;
   }).join("");
- 
+
   // service breakdown
   const svcMap={};
   state.transactions.forEach(t=>{svcMap[t.service]=(svcMap[t.service]||0)+1;});
@@ -341,7 +365,7 @@ function renderDashboard(){
         </div>
       </div>`).join(""):`<p style="color:var(--text2);font-size:14px;padding:20px 0;">No transactions yet.</p>`;
   }
- 
+
   // recent transactions
   const tbody=$("recentTransactions");
   if(tbody){
@@ -350,42 +374,42 @@ function renderDashboard(){
         <td><strong>${t.id}</strong></td>
         <td>${t.customer}</td>
         <td>${t.service}</td>
-        <td>${statusPill(t.status)}</td>
+        <td>${fulfillmentPill(t.fulfillment||"Pick Up")}</td>
         <td><strong>${peso.format(t.total)}</strong></td>
       </tr>`).join("")||`<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px;">No transactions yet</td></tr>`;
   }
 }
- 
+
 // ─── REPORTS ────────────────────────────────────────────────────────────────
 function renderReports(){
   const today=new Date();
   const todayStr=today.toDateString();
   const mo=today.getMonth();const yr=today.getFullYear();
- 
+
   const daily=state.transactions.filter(t=>new Date(t.date).toDateString()===todayStr);
   const monthly=state.transactions.filter(t=>{const d=new Date(t.date);return d.getMonth()===mo&&d.getFullYear()===yr;});
- 
+
   const fmt=(label,val)=>`<div class="report-stat"><span class="report-stat-label">${label}</span><span class="report-stat-val">${val}</span></div>`;
- 
+
   $("dailyReport").innerHTML=
     fmt("Transactions",daily.length)+
     fmt("Revenue",peso.format(daily.reduce((s,t)=>s+t.total,0)))+
     fmt("Avg. Order",peso.format(daily.length?Math.round(daily.reduce((s,t)=>s+t.total,0)/daily.length):0));
- 
+
   $("monthlyReport").innerHTML=
     fmt("Transactions",monthly.length)+
     fmt("Revenue",peso.format(monthly.reduce((s,t)=>s+t.total,0)))+
     fmt("Avg. Order",peso.format(monthly.length?Math.round(monthly.reduce((s,t)=>s+t.total,0)/monthly.length):0));
- 
+
   const low=state.inventory.filter(i=>i.stock<i.threshold);
   $("inventoryReport").innerHTML=
     fmt("Total Items",state.inventory.length)+
     fmt("Low Stock",low.length)+
     fmt("Items OK",state.inventory.length-low.length);
- 
+
   $("printReportBtn").onclick=()=>window.print();
 }
- 
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 setupLogin();
 setupPOS();
